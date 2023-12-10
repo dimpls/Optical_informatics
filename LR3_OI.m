@@ -3,31 +3,39 @@ clear all;
 
 R = 5;
 m = 2;
+
 n = 256;
 N = 2 * n + 1;
-h_r = R / n;
-r_h = 0 : h_r : (R - h_r / 2);
 M = 4096;
-b = (n ^ 2) / (4 * R * M);
-h_x = (2 * R) / n;
+
+step = R / n;
+r_linspace = 0 : step : (R - step / 2);
+
+b_wave = (n ^ 2) / (4 * R * M);
+h_x = 2 * R / n;
+
+range = -R:R;
+
+h_u = (2 * b_wave) / N;
+u_area = -b_wave : h_u : b_wave - h_u;
 
 function res = func_ro(ro)
     res = (5 * (ro .^ 5) - 4 * ro .^ 3);
 end
 
-values_func_ro = func_ro(r_h);
+values_func_ro = func_ro(r_linspace);
 
 %Задание 1
 
 figure('Position', [100, 100, 1200, 600]);
-plot(r_h, abs(values_func_ro), 'LineWidth', 2, 'Color', 'g');
+plot(r_linspace, abs(values_func_ro), 'LineWidth', 2, 'Color', 'g');
 title('Амплитуда');
 grid on;
 set(gca, 'FontSize', 12);
 
 figure('Position', [100, 100, 1200, 600]);
-plot(r_h, angle(values_func_ro), 'LineWidth', 2, 'Color', 'g');
-title('Амплитуда');
+plot(r_linspace, angle(values_func_ro), 'LineWidth', 2, 'Color', 'g');
+title('Фаза');
 grid on;
 set(gca, 'FontSize', 12);
 
@@ -48,78 +56,61 @@ end
 
 two_d_array_of_func = two_d_array_of_function_values(values_func_ro, n, m);
 
-function plot_2d_function(input_function, R, amplitude_title, phase_title)
-    fig = figure;
-    ax1 = subplot(1, 2, 1);
-    ax2 = subplot(1, 2, 2);
-
-    imagesc(ax1, -R:R, -R:R, abs(input_function));
-    colormap(ax1, 'Winter'); %Autumn
-    title(ax1, amplitude_title);
-    colorbar(ax1);
-
-    imagesc(ax2, -R:R, -R:R, angle(input_function));
-    colormap(ax2, 'Winter');
-    title(ax2, phase_title);
-    colorbar(ax2);
-end
-
-%plot_2d_function(two_d_array_of_func, R, 'Амплитуда', 'Фаза');
 figure('Position', [100, 100, 600, 600]);
-imagesc(-R:R, -R:R, abs(two_d_array_of_func));
+imagesc(range, range, abs(two_d_array_of_func));
 title('Амплитуда');
 colormap('Winter');
 colorbar;
 
 figure('Position', [100, 100, 600, 600]);
-imagesc(-R:R, -R:R, angle(two_d_array_of_func));
+imagesc(range, range, angle(two_d_array_of_func));
 title('Фаза');
 colormap('Winter');
 colorbar;
 
 %Задание 3
 
-function integral = hankel_transformation(input_function, m, input_area, h_r)
-    x = input_area;
+function integral = H_transformation(input_function, m, area, step)
+    x = area;
     n = length(x);
     integral = complex(zeros(1, n));
     for i = 1:n
-        integral(i) = sum(input_function .* besselj(m, 2 * pi * x * x(i)) .* x * h_r);
+        integral(i) = sum(input_function .* besselj(m, 2 * pi * x * x(i)) .* x * step);
     end
     integral = integral * (2 * pi / 1i^m);
 end
 
 tic;
-H = hankel_transformation(values_func_ro, m, r_h, h_r);
-elapsedTimeH = toc
+H = H_transformation(values_func_ro, m, r_linspace, step);
+TimeH = toc
 
 figure('Position', [100, 100, 600, 600]);
-plot(r_h, abs(H), 'LineWidth', 2, 'Color', 'g');
+plot(r_linspace, abs(H), 'LineWidth', 2, 'Color', 'g');
 title('Амплитуда');
 grid on;
 set(gca, 'FontSize', 12);
 
 figure('Position', [100, 100, 600, 600]);
-plot(r_h, angle(H), 'LineWidth', 2, 'Color', 'g');
+plot(r_linspace, angle(H), 'LineWidth', 2, 'Color', 'g');
 title('Фаза');
 grid on;
 set(gca, 'FontSize', 12);
 
 H_2D_array = two_d_array_of_function_values(H, n, m);
 
-%plot_2d_function(H_2D_array, R, 'Амплитуда', 'Фаза');
 
 figure('Position', [100, 100, 600, 600]);
-imagesc(-R:R, -R:R, abs(H_2D_array));
+imagesc(range, range, abs(H_2D_array));
 title('Амплитуда');
 colormap('Winter');
 colorbar;
 
 figure('Position', [100, 100, 600, 600]);
-imagesc(-R:R, -R:R, angle(H_2D_array));
+imagesc(range, range, angle(H_2D_array));
 title('Фаза');
 colormap('Winter');
 colorbar;
+
 %Задание 4
 
 function F = bpf(f, N, M, h_x)
@@ -147,12 +138,7 @@ end
 
 tic;
 FFT_2D = bpf_dd(two_d_array_of_func, N, M, h_x);
-elapsedTimeBPF = toc
-
-%plot_2d_function(FFT_2D, b, 'Амплитуда', 'Фаза');
-
-h_u = (2 * b) / N;
-u_area = -b : h_u : b - h_u;
+TimeBPF = toc
 
 figure('Position', [100, 100, 600, 600]);
 imagesc(u_area, u_area, abs(FFT_2D));
